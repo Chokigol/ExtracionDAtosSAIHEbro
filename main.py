@@ -9,60 +9,72 @@ response = requests.get(url)
 
 # Verificar si la solicitud fue exitosa
 if response.status_code == 200:
-	# Parsear el contenido HTML con BeautifulSoup
-	soup = BeautifulSoup(response.text, 'html.parser')
+    # Parsear el contenido HTML con BeautifulSoup
+    soup = BeautifulSoup(response.text, 'html.parser')
 
-	# Encontrar la tabla
-	table = soup.find('table')
+    # Encontrar todas las tablas en la página
+    tables = soup.find_all('table')
 
-	# Encontrar todas las filas de la tabla
-	rows = table.find_all('tr')
+    # Inicializar listas para almacenar los valores, índices y fechas de todas las tablas
+    all_values = []
+    all_indices = []
+    all_dates = []
 
-	# Inicializar listas para almacenar los valores de la segunda columna, sus índices y las fechas
-	values = []
-	indices = []
-	dates = []
+    # Iterar sobre todas las tablas
+    for table in tables:
+        # Encontrar todas las filas de la tabla actual
+        rows = table.find_all('tr')
 
-	# Iterar sobre las filas y obtener los valores de la segunda columna y las fechas
-	for index, row in enumerate(rows[1:], start=1):  # Empezar desde la segunda fila para omitir los encabezados
-		cells = row.find_all('td')
-		# Verificar si hay al menos dos celdas en la fila
-		if len(cells) >= 2:
-			value = cells[1].text.replace(',', '.')
-			date_str = cells[0].text.strip()
-			# Intentar convertir el valor a float y la fecha a un objeto de fecha
-			try:
-				values.append(float(value))
-				indices.append(index)
-				dates.append(datetime.strptime(date_str, "%d/%m/%Y %H:%M"))
-			except (ValueError, ValueError) as e:
-				print(f"Error al convertir valor o fecha: {e}")
+        # Inicializar listas para almacenar los valores, índices y fechas de la tabla actual
+        values = []
+        indices = []
+        dates = []
 
-	# Encontrar el valor máximo y su posición
-	max_value = max(values)
-	max_index = indices[values.index(max_value)]
-	max_date = dates[values.index(max_value)]
+        # Iterar sobre las filas y obtener los valores de la segunda columna y las fechas
+        for index, row in enumerate(rows[1:], start=1):  # Empezar desde la segunda fila para omitir los encabezados
+            cells = row.find_all('td')
+            # Verificar si hay al menos dos celdas en la fila
+            if len(cells) >= 2:
+                value = cells[1].text.replace(',', '.')
+                date_str = cells[0].text.strip()
+                # Intentar convertir el valor a float y la fecha a un objeto de fecha
+                try:
+                    values.append(float(value))
+                    indices.append(index)
+                    dates.append(datetime.strptime(date_str, "%d/%m/%Y %H:%M"))
+                except (ValueError, ValueError) as e:
+                    print(f"Error al convertir valor o fecha: {e}")
 
-	# Encontrar el valor mínimo y su posición
-	min_value = min(values)
-	min_index = indices[values.index(min_value)]
-	min_date = dates[values.index(min_value)]
+        # Agregar los valores, índices y fechas de la tabla actual a las listas globales
+        all_values.extend(values)
+        all_indices.extend(indices)
+        all_dates.extend(dates)
+    
 
-	print(f"El valor máximo en la segunda columna de la tabla es: {max_value}")
-	# print(f"Se encuentra en la fila con índice: {max_index}")
-	print(f"La fecha correspondiente al máximo es: {max_date.strftime('%d/%m/%Y %H:%M')}")
+    max_value = max(all_values)
+    max_index = all_indices[all_values.index(max_value)]
+    max_date = all_dates[all_values.index(max_value)]
+    
+    # Ordenar las fechas y los valores en función de las fechas
+    sorted_data = sorted(zip(all_dates, all_values, all_indices), key=lambda x: x[0])
+    
+    # Determinar la tendencia
+    first_values = all_values[:10]
+    mean_first_values = sum(first_values) / len(first_values)
+    if first_values[0] > mean_first_values + 1.5:
+        trend = "Ascendente"
+    elif first_values[0] < mean_first_values - 1.5:
+        trend = "Descendente"
+    else:
+        trend = "Constante"
+    
+    # print("Lista completa con fechas ordenadas:")
+    # for date, value, index in sorted_data:
+    #     print(f"{date.strftime('%d/%m/%Y %H:%M')} - Valor: {value} - Índice: {index}")
+    print(f"El valor máximo en la segunda columna de todas las tablas es: {max_value}")
+    # print(f"Se encuentra en la fila con índice: {max_index}")
+    print(f"La fecha correspondiente al máximo es: {max_date.strftime('%d/%m/%Y %H:%M')}")
+    print(f"\nLa tendencia de los últimos 10 valores es: {trend}")
 
-	# Tomar solo los últimos 10 valores para determinar la tendencia
-	first_values = values[:10]
-	mean_first_values = sum(first_values) / len(first_values)
-	# Determinar la tendencia
-	if first_values[0] > mean_first_values+1.5:
-		trend = "Ascendente"
-	elif first_values[0] < mean_first_values-1.5:
-		trend = "Descendente"
-	else:
-		trend = "Constante"
-
-	print(f"\nLa tendencia de los últimos 10 valores es: {trend}")
 else:
-		print(f"No se pudo acceder a la página. Código de estado: {response.status_code}")
+    print(f"No se pudo acceder a la página. Código de estado: {response.status_code}")
