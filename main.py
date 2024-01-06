@@ -11,7 +11,11 @@ response = requests.get(url)
 if response.status_code == 200:
     # Parsear el contenido HTML con BeautifulSoup
     soup = BeautifulSoup(response.text, 'html.parser')
-
+    estacion = soup.find('span', class_='bloque2').text.strip()
+    
+    # Imprimir el contenido formateado
+    parts = estacion.split('(')
+    name_part = parts[0].strip()
     # Encontrar todas las tablas en la página
     tables = soup.find_all('table')
 
@@ -71,10 +75,11 @@ if response.status_code == 200:
     # print("Lista completa con fechas ordenadas:")
     # for date, value, index in sorted_data:
     #     print(f"{date.strftime('%d/%m/%Y %H:%M')} - Valor: {value} - Índice: {index}")
+    print(f"{name_part}")
     print(f"El valor máximo en la segunda columna de todas las tablas es: {max_value}")
     # print(f"Se encuentra en la fila con índice: {max_index}")
     print(f"La fecha correspondiente al máximo es: {max_date.strftime('%d/%m/%Y %H:%M')}")
-    print(f"\nLa tendencia de los últimos 10 valores es: {trend}")
+    print(f"La tendencia de los últimos 10 valores es: {trend}")
 
 else:
     print(f"No se pudo acceder a la página. Código de estado: {response.status_code}")
